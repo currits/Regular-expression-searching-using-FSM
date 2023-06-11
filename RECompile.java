@@ -72,8 +72,34 @@ public class RECompile{
 
         //third precedence, repition/option
         //this implements T -> F*
-        // TODO: NEEDS SET STATE STUFF
-        if (expression.charAt(index) == '*' || expression.charAt(index) == '+' || expression.charAt(index) == '?') index++;
+        if (expression.charAt(index) == '*') {
+            //this implements the zero or more state
+            //sets r to this branch state, so that the factor can be skipped (match 0 times)
+            index++;
+            //from 22/3 lecture
+            setState(state, ' ', state+1, t1);
+            r = state; state++;
+        }
+        else if (expression.charAt(index) == '+'){
+            //this implements the one or more state
+            //similar to above, but does NOT set r to this state, as the factor must be matched before branching
+            index++;
+            setState(state, ' ', state+1, t1);
+            state++;
+        }
+        else if (expression.charAt(index) == '?'){
+            //this implements the zero or once state
+            index++;
+            //create the branch pointing to the factor state and the next state
+            setState(state, ' ', state+1, t1); 
+            //now make the previous state (the state created by the factor) point to the next state after this one
+            if(next1.get(f).equals(next2.get(f))){
+                next2.set(f, state+1);
+            }
+            next1.set(f, state+1);
+            //thus making a zero or once machine
+            r = state; state++;
+        }
 
         //this needs to be lowest precedence
         //by making this an else if, then hopefully should return back up to expression for concatenation so that things can happen
@@ -101,19 +127,58 @@ public class RECompile{
             next1.set(f, state);
         }
         //this implements T -> [D]  
-        // TODO: NEEDS SET STATE STUFF
-        // Probably a bit like what is above but for each alternation within brackets?
+        // TODO: Figure how moving this to factor alters precedence, then find a way to get this handled properly
+        // TODO: clean these comments oml
         else if (expression.charAt(index) == '['){
-            //consume the open bracket
+            //consume the open bracket, dont need a new state for this symbol consumption
             index++;
+            //set the entry to the whole machine as the next machine to be created (will be a branching state)
+            r = state;
             //spec defines that for any [] list, if it includes ']' then it must be the first character, so
-            if(expression.charAt(index) == ']') index++;
+            if(expression.charAt(index) == ']'){
+                //create a branch state that points to the state for the ] character, and the next branching machine after
+                setState(state, ' ', state+1, state+2);
+                state++;
+                //state for matching the ]
+                //branch numbers are placeholder
+                setState(state, expression.charAt(index), state+1, state+1);
+                //consume the character
+                index++;
+                state++;
+            }
             //then consume any symbol until a ']' is reached, or until index is outside of string
-            while(expression.charAt(index) != ']' && index < expression.length()){
+            while(index < expression.length() && expression.charAt(index) != ']'){
+                //create a branch state that points to the state for this loop's character, and the next branching machine after
+                setState(state, ' ', state+1, state+2);
+                state++; //new state
+                //make a state for matching the character for this loop
+                //branch numbers are placeholder, will be iterated over after all the machines are made
+                setState(state, expression.charAt(index), state+1, state+1);
+                state++;
+                //consume the character
                 index++;
             }
             //if end of string reached, error
             if (index == expression.length()) error();
+            //TODO: see if the last disjunctive set state can be removed
+            //point the branch numbers of the final loop iteration branch state to prevent leaving the alternation (effectively turns that branch state into a dud unconditional pass-through type state, can try doing without but would be intense)
+            //state-2 as the loop makes branch state first then character match state
+            //so branch state is 2 back
+            next1.set(state-2, state-1);
+            next2.set(state-2, state-1);
+            //consume the close bracket
+            index++;
+            //dont need to make state, can just make all created states point to whatever is created next
+            //now we need to join the end points of all the character matching states we have just built, to the new state value
+            //r currently stores the value of state before entering this whole loop, so we can use it as our reference point
+            //the first state we need to change is r + 1, then every second state after, so
+            for(int i = r + 1; i < state; i+=2){
+                //make the character matching states all point to the current state value
+                //meaning if any match, machine jumps to the end
+                //alternation
+                next1.set(i, state);
+                next2.set(i, state);
+            }
         }
 
         return r;
