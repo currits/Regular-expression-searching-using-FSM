@@ -9,7 +9,7 @@ public class RECompile{
     String operators;
     int state;
 
-    List<Character> ch;
+    List<String> ch;
     List<Integer> next1, next2;
 
     public RECompile(String p){
@@ -43,7 +43,7 @@ public class RECompile{
     private void parse(){
         int initial = expression();
 
-        setState(state, ' ', 0, 0);
+        setState(state, " ", 0, 0);
 
         // TODO: Output 3 arrays to std out with initial as start state below
 
@@ -77,21 +77,21 @@ public class RECompile{
             //sets r to this branch state, so that the factor can be skipped (match 0 times)
             index++;
             //from 22/3 lecture
-            setState(state, ' ', state+1, t1);
+            setState(state, " ", state+1, t1);
             r = state; state++;
         }
         else if (expression.charAt(index) == '+'){
             //this implements the one or more state
             //similar to above, but does NOT set r to this state, as the factor must be matched before branching
             index++;
-            setState(state, ' ', state+1, t1);
+            setState(state, " ", state+1, t1);
             state++;
         }
         else if (expression.charAt(index) == '?'){
             //this implements the zero or once state
             index++;
             //create the branch pointing to the factor state and the next state
-            setState(state, ' ', state+1, t1); 
+            setState(state, " ", state+1, t1); 
             //now make the previous state (the state created by the factor) point to the next state after this one
             if(next1.get(f).equals(next2.get(f))){
                 next2.set(f, state+1);
@@ -106,6 +106,7 @@ public class RECompile{
         //before returning for alternation
         //this implements T -> F|T  call to term is what confirms alternation
         else if (expression.charAt(index) == '|') {
+            //TODO figure out what this does and why
             if(next1.get(f).equals(next2.get(f))){
                 next2.set(f, state);
             }
@@ -118,7 +119,7 @@ public class RECompile{
             state++;
 
             t2 = term();
-            setState(r, ' ', t1, t2);
+            setState(r, " ", t1, t2);
 
             if(next1.get(f).equals(next2.get(f))){
                 next2.set(f, state);
@@ -137,7 +138,7 @@ public class RECompile{
             //spec defines that for any [] list, if it includes ']' then it must be the first character, so
             if(expression.charAt(index) == ']'){
                 //create a branch state that points to the state for the ] character, and the next branching machine after
-                setState(state, ' ', state+1, state+2);
+                setState(state, " ", state+1, state+2);
                 state++;
                 //state for matching the ]
                 //branch numbers are placeholder
@@ -149,7 +150,7 @@ public class RECompile{
             //then consume any symbol until a ']' is reached, or until index is outside of string
             while(index < expression.length() && expression.charAt(index) != ']'){
                 //create a branch state that points to the state for this loop's character, and the next branching machine after
-                setState(state, ' ', state+1, state+2);
+                setState(state, " ", state+1, state+2);
                 state++; //new state
                 //make a state for matching the character for this loop
                 //branch numbers are placeholder, will be iterated over after all the machines are made
@@ -226,8 +227,16 @@ public class RECompile{
         System.exit(0);
     }
 
-    private void setState(int s, char c, int n1, int n2){
+    private void setState(int s, String c, int n1, int n2){
         ch.add(s,c);
+        next1.add(s, n1);
+        next2.add(s, n2);
+    }
+
+    //overload method so we can handle passing characters here instead of casting in every method call
+    private void setState(int s, char c, int n1, int n2){
+        String str = Character.toString(c);
+        ch.add(s,str);
         next1.add(s, n1);
         next2.add(s, n2);
     }
