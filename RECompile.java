@@ -85,8 +85,7 @@ public class RECompile{
         if (index == expression.length())
             return r;
         //then comes back up to handle concatenation before descending to handle alternation, thus making concat 4th and alternation 5th in precedence
-        if (isLiteral(expression.charAt(index)) || expression.charAt(index) == '(') expression();
-        //TODO a\d aa[cd] a|b 
+        if (isLiteral(expression.charAt(index)) || expression.charAt(index) == '(' || expression.charAt(index) == '[' || expression.charAt(index) == '\\') expression();
 
         return r;
     }
