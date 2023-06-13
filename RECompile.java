@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +50,29 @@ public class RECompile{
 
         // TODO: Output 3 arrays to std out with initial as start state below
 
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+            String str = "s   ch 1 2";
+            writer.write(str);
+            writer.newLine();
+            str = "---+--+-+-+";
+            writer.write(str);
+            writer.newLine();
+            for(int i = 0; i < ch.size(); i++){
+                str = String.format("%02d | %s %d %d", i, ch.get(i), next1.get(i), next2.get(i));
+                writer.write(str);
+                writer.newLine();
+            }
+            str = "start state: " + initial;
+            writer.write(str);
+            writer.newLine();
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            System.err.println("Error writing results to output");
+            e.printStackTrace();
+        }
+
     }
 
     /////////////////////////// Here be dragons //////////////////////////////////////
@@ -56,8 +82,11 @@ public class RECompile{
 
         //call to term which calls factor which handles 1st, 2nd, 3rd precedence things
         r = term();
+        if (index == expression.length())
+            return r;
         //then comes back up to handle concatenation before descending to handle alternation, thus making concat 4th and alternation 5th in precedence
         if (isLiteral(expression.charAt(index)) || expression.charAt(index) == '(') expression();
+        //TODO a\d aa[cd] a|b 
 
         return r;
     }
@@ -69,6 +98,8 @@ public class RECompile{
 
         //this implements T -> F
         r = t1 = factor();
+        if (index == expression.length())
+            return r;
 
         //third precedence, repition/option
         //this implements T -> F*
@@ -91,12 +122,12 @@ public class RECompile{
             //this implements the zero or once state
             index++;
             //create the branch pointing to the factor state and the next state
-            setState(state, " ", state+1, t1); 
+            setState(state, " ", state+1, t1);
             //now make the previous state (the state created by the factor) point to the next state after this one
-            if(next1.get(f).equals(next2.get(f))){
-                next2.set(f, state+1);
+            if(next1.get(r).equals(next2.get(r))){
+                next2.set(r, state+1);
             }
-            next1.set(f, state+1);
+            next1.set(r, state+1);
             //thus making a zero or once machine
             r = state; state++;
         }
@@ -106,82 +137,38 @@ public class RECompile{
         //before returning for alternation
         //this implements T -> F|T  call to term is what confirms alternation
         else if (expression.charAt(index) == '|') {
-            //TODO figure out what this does and why
-            if(next1.get(f).equals(next2.get(f))){
-                next2.set(f, state);
+            //best I can figure, this is for making the most previously created state (whatever has been created before the call to term) point to the about-to-be-made alternation
+            // ie for "(abcd)a|b" it takes the end of the (abcd) machine and points it to the branch machine, the |
+            //but using f here is fucking things up when the | is early in the term (the second symbol, "a|b") because when f is assigned, state is 0, so f becomes -1, and the algorithm tries to grab a state that doesnt exist
+            //its from moodle though, so moodle code must assume state starts at 1??
+            //temp fix for now
+            if (f != -1){
+                if(next1.get(f).equals(next2.get(f))){
+                    next2.set(f, state);
+                }
+                next1.set(f, state);
             }
-
-            next1.set(f, state);
             f = state-1;
 
             index++;
             r = state;
+            setState(state, " ", 0 , 0); //the dummy
             state++;
 
+            //we need to create a dummy state first, then overwrite it. The dummy state will be ther branch state, to the beginning of the machines made on either side of the |
+            //currently the lists prevent leaving null indexes
+            //the dummy state is above, before the state increment
             t2 = term();
-            setState(r, " ", t1, t2);
+            //we shall now set it to the values we need: setState(r, " ", t1, t2);
+            next1.set(r, t1); next2.set(r, t2);
 
+            //and this sets the end state of the machine that comes after the | to the final state beyond it
             if(next1.get(f).equals(next2.get(f))){
                 next2.set(f, state);
             }
-
             next1.set(f, state);
-        }
-        //this implements T -> [D]  
-        // TODO: Figure how moving this to factor alters precedence, then find a way to get this handled properly
-        // TODO: clean these comments oml
-        else if (expression.charAt(index) == '['){
-            //consume the open bracket, dont need a new state for this symbol consumption
-            index++;
-            //set the entry to the whole machine as the next machine to be created (will be a branching state)
-            r = state;
-            //spec defines that for any [] list, if it includes ']' then it must be the first character, so
-            if(expression.charAt(index) == ']'){
-                //create a branch state that points to the state for the ] character, and the next branching machine after
-                setState(state, " ", state+1, state+2);
-                state++;
-                //state for matching the ]
-                //branch numbers are placeholder
-                setState(state, expression.charAt(index), state+1, state+1);
-                //consume the character
-                index++;
-                state++;
-            }
-            //then consume any symbol until a ']' is reached, or until index is outside of string
-            while(index < expression.length() && expression.charAt(index) != ']'){
-                //create a branch state that points to the state for this loop's character, and the next branching machine after
-                setState(state, " ", state+1, state+2);
-                state++; //new state
-                //make a state for matching the character for this loop
-                //branch numbers are placeholder, will be iterated over after all the machines are made
-                setState(state, expression.charAt(index), state+1, state+1);
-                state++;
-                //consume the character
-                index++;
-            }
-            //if end of string reached, error
-            if (index == expression.length()) error();
-            //TODO: see if the last disjunctive set state can be removed
-            //point the branch numbers of the final loop iteration branch state to prevent leaving the alternation (effectively turns that branch state into a dud unconditional pass-through type state, can try doing without but would be intense)
-            //state-2 as the loop makes branch state first then character match state
-            //so branch state is 2 back
-            next1.set(state-2, state-1);
-            next2.set(state-2, state-1);
-            //consume the close bracket
-            index++;
-            //dont need to make state, can just make all created states point to whatever is created next
-            //now we need to join the end points of all the character matching states we have just built, to the new state value
-            //r currently stores the value of state before entering this whole loop, so we can use it as our reference point
-            //the first state we need to change is r + 1, then every second state after, so
-            for(int i = r + 1; i < state; i+=2){
-                //make the character matching states all point to the current state value
-                //meaning if any match, machine jumps to the end
-                //alternation
-                next1.set(i, state);
-                next2.set(i, state);
-            }
-        }
 
+        }
         return r;
     }    
 
@@ -211,7 +198,37 @@ public class RECompile{
             index++;
             r = state;
             state++;
-        } 
+        }
+        //this implements F -> [D]  
+        else if (expression.charAt(index) == '['){
+            //consume the open bracket, dont need a new state for this symbol consumption
+            index++;
+            //new string to store the array of characters that can be matched
+            String disjuntiveList = "";
+            //set the entry to the whole machine as the next machine to be created (will be a branching state)
+            r = state;
+            //spec defines that for any [] list, if it includes ']' then it must be the first character, so
+            if(expression.charAt(index) == ']'){
+                //append the ]
+                disjuntiveList += expression.charAt(index);
+                //consume the character
+                index++;
+            }
+            //then consume any symbol until a ']' is reached, or until index is outside of string
+            while(index < expression.length() && expression.charAt(index) != ']'){
+                //append the character
+                disjuntiveList += expression.charAt(index);
+                //consume the character
+                index++;
+            }
+            //if end of string reached, error
+            if (index == expression.length()) error();
+            //otherwise, we have built our string, so create state with it
+            setState(state, disjuntiveList, state+1, state+1);
+            state++;
+            //and consume the close bracket
+            index++;
+        }
         else error();
 
         return r;
