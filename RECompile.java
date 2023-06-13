@@ -44,11 +44,12 @@ public class RECompile{
 
 
     private void parse(){
+        setState(state, "", 1, 1);
+        state++;
         int initial = expression();
+        setState(state, "", 0, 0);
 
-        setState(state, " ", 0, 0);
-
-        // TODO: Output 3 arrays to std out with initial as start state below
+        // TODO: determine best method for output to REsearch 
 
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
@@ -63,9 +64,6 @@ public class RECompile{
                 writer.write(str);
                 writer.newLine();
             }
-            str = "start state: " + initial;
-            writer.write(str);
-            writer.newLine();
             writer.flush();
             writer.close();
         } catch (IOException e) {
@@ -103,27 +101,33 @@ public class RECompile{
         //third precedence, repition/option
         //this implements T -> F*
         if (expression.charAt(index) == '*') {
-            //TODO a*b* not directing a* branch to b* branch
+            if(next1.get(f).equals(next2.get(f))){
+                next2.set(f, state);
+            }
+            next1.set(f, state);            
             //this implements the zero or more state
             //sets r to this branch state, so that the factor can be skipped (match 0 times)
             index++;
             //from 22/3 lecture
-            setState(state, " ", state+1, t1);
+            setState(state, "", state+1, t1);
             r = state; state++;
         }
         else if (expression.charAt(index) == '+'){
             //this implements the one or more state
             //similar to above, but does NOT set r to this state, as the factor must be matched before branching
             index++;
-            setState(state, " ", state+1, t1);
+            setState(state, "", state+1, t1);
             state++;
         }
         else if (expression.charAt(index) == '?'){
-            //TODO a?b? not directing a? branch to b? branch
             //this implements the zero or once state
+            if(next1.get(f).equals(next2.get(f))){
+                next2.set(f, state);
+            }
+            next1.set(f, state);
             index++;
             //create the branch pointing to the factor state and the next state
-            setState(state, " ", state+1, t1);
+            setState(state, "", state+1, t1);
             //now make the previous state (the state created by the factor) point to the next state after this one
             if(next1.get(r).equals(next2.get(r))){
                 next2.set(r, state+1);
@@ -131,31 +135,29 @@ public class RECompile{
             next1.set(r, state+1);
             //thus making a zero or once machine
             r = state; state++;
+            //now make an state for the branch and the factor state to point to, so that any alternation or closure things after need only manipulate that one state
+            setState(state, "", state+1, state+1);
+            state++;
         }
 
         //this needs to be lowest precedence
         //by making this an else if, then hopefully should return back up to expression for concatenation so that things can happen
         //before returning for alternation
         //this implements T -> F|T  call to term is what confirms alternation
-        //TODO (a|b)|(c|d) a state not branching to end state
         //Need to insert non matching end state for alternation machines to point to, then set that state's endpoint
         else if (expression.charAt(index) == '|') {
             //best I can figure, this is for making the most previously created state (whatever has been created before the call to term) point to the about-to-be-made alternation
             // ie for "(abcd)a|b" it takes the end of the (abcd) machine and points it to the branch machine, the |
-            //but using f here is fucking things up when the | is early in the term (the second symbol, "a|b") because when f is assigned, state is 0, so f becomes -1, and the algorithm tries to grab a state that doesnt exist
-            //its from moodle though, so moodle code must assume state starts at 1??
-            //temp fix for now
-            if (f != -1){
-                if(next1.get(f).equals(next2.get(f))){
-                    next2.set(f, state);
-                }
-                next1.set(f, state);
+            if(next1.get(f).equals(next2.get(f))){
+                next2.set(f, state);
             }
+            next1.set(f, state);
+            
             f = state-1;
 
             index++;
             r = state;
-            setState(state, " ", 0 , 0); //the dummy
+            setState(state, "", 0 , 0); //the dummy
             state++;
 
             //we need to create a dummy state first, then overwrite it. The dummy state will be ther branch state, to the beginning of the machines made on either side of the |
@@ -170,7 +172,9 @@ public class RECompile{
                 next2.set(f, state);
             }
             next1.set(f, state);
-
+            //dummy state to allow easier changes to this machines end state
+            setState(state, "", state+1, state+1);
+            state++;
         }
         return r;
     }    
