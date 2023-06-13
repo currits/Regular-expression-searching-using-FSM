@@ -17,12 +17,13 @@ public class REDeque {
     public void push(int value){
         if(head == null){
             head = new Node(value);
+            size++;
             return;
         }
 
         Node newNode = new Node(value);
 
-        head.setNext(newNode);
+        newNode.setNext(head);
 
         head = newNode;
         size++;
@@ -35,6 +36,7 @@ public class REDeque {
     public void put(int value){
         if(head == null){
             head = new Node(value);
+            size++;
             return;
         }
 
@@ -55,19 +57,23 @@ public class REDeque {
      * Pops a value off the top of the deque
      * @return The head value of the deque
      */
-    public Node pop(){
+    public int pop(){
         if(head == null){
-            return null;
+            return -2;
         }
-
 
         Node node = head;
 
-        head = head.getNext();
+        if(size() == 1){
+            head = null;
+        }
+        else{
+            head = head.getNext();
+        }
 
         size--;
 
-        return node;
+        return node.getState();
     }
 
     /**
