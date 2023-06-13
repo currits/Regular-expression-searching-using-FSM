@@ -103,6 +103,7 @@ public class RECompile{
         //third precedence, repition/option
         //this implements T -> F*
         if (expression.charAt(index) == '*') {
+            //TODO a*b* not directing a* branch to b* branch
             //this implements the zero or more state
             //sets r to this branch state, so that the factor can be skipped (match 0 times)
             index++;
@@ -118,6 +119,7 @@ public class RECompile{
             state++;
         }
         else if (expression.charAt(index) == '?'){
+            //TODO a?b? not directing a? branch to b? branch
             //this implements the zero or once state
             index++;
             //create the branch pointing to the factor state and the next state
@@ -135,6 +137,8 @@ public class RECompile{
         //by making this an else if, then hopefully should return back up to expression for concatenation so that things can happen
         //before returning for alternation
         //this implements T -> F|T  call to term is what confirms alternation
+        //TODO (a|b)|(c|d) a state not branching to end state
+        //Need to insert non matching end state for alternation machines to point to, then set that state's endpoint
         else if (expression.charAt(index) == '|') {
             //best I can figure, this is for making the most previously created state (whatever has been created before the call to term) point to the about-to-be-made alternation
             // ie for "(abcd)a|b" it takes the end of the (abcd) machine and points it to the branch machine, the |
