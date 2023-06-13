@@ -25,7 +25,7 @@ public class RESearch {
             2, 2, 4, 6, 3, 6, 7, 8
         };
 
-        if(args.length != 0){
+        if(args.length != 1){
             System.err.println("Usage: java RECompile <\"regularExpression\"> | java RESearch <file>");
             return;
         }
