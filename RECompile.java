@@ -11,6 +11,7 @@ public class RECompile{
     int index;
     String operators;
     int state;
+    String delimiter = " ";
 
     List<String> ch;
     List<Integer> next1, next2;
@@ -49,23 +50,27 @@ public class RECompile{
         int initial = expression();
         setState(state, "", 0, 0);
 
-        // TODO: determine best method for output to REsearch 
-
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+            BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(System.out));
+            BufferedWriter terminalWriter = new BufferedWriter(new OutputStreamWriter(System.err));
             String str = "s   ch 1 2";
-            writer.write(str);
-            writer.newLine();
+            terminalWriter.write(str);
+            terminalWriter.newLine();
             str = "---+--+-+-+";
-            writer.write(str);
-            writer.newLine();
+            terminalWriter.write(str);
+            terminalWriter.newLine();
             for(int i = 0; i < ch.size(); i++){
                 str = String.format("%02d | %s %d %d", i, ch.get(i), next1.get(i), next2.get(i));
-                writer.write(str);
-                writer.newLine();
+                terminalWriter.write(str);
+                terminalWriter.newLine();
+                str = String.format("%s%s%d%s%d", ch.get(i), delimiter, next1.get(i), delimiter, next2.get(i));
+                outputWriter.write(str);
+                outputWriter.newLine();
             }
-            writer.flush();
-            writer.close();
+            terminalWriter.flush();
+            terminalWriter.close();
+            outputWriter.flush();
+            outputWriter.close();
         } catch (IOException e) {
             System.err.println("Error writing results to output");
             e.printStackTrace();

@@ -2,28 +2,53 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class RESearch {
 
     static String[] ch;
     static int[] n1, n2;
+    static String delimiter = " ";
 
     public static void main(String[] args) throws IOException{
         
-        // TODO: Get input from RECompile, currently just using example from tony lecture for testing
+        BufferedReader fsmReader = new BufferedReader(new InputStreamReader(System.in));
+        List<String> stateMachines = new ArrayList<>();
+        String str = "";
+        while ((str = fsmReader.readLine()) != null){
+            stateMachines.add(str);
+        }
 
-        ch = new String[]{
-            "", "A", "", "B", "", "A", "C", "D"
-        };
+        if (stateMachines.isEmpty()){
+            System.err.println("Error reading state machine from standard input");
+            return;
+        }
+        
+        ch = new String[stateMachines.size()];
+        n1 = new int[stateMachines.size()];
+        n2 = new int[stateMachines.size()];
 
-        n1 = new int[]{
-            2, 2, 1, 6, 5, 6, 7, 8
-        };
+        for (int i = 0; i < stateMachines.size(); i++){
+            String[] tuple = stateMachines.get(i).split(delimiter);
+            ch[i] = tuple[0];
+            n1[i] = Integer.parseInt(tuple[1]);
+            n1[i] = Integer.parseInt(tuple[2]);
+        }
 
-        n2 = new int[]{
-            2, 2, 4, 6, 3, 6, 7, 8
-        };
+        // ch = new String[]{
+        //     "", "A", "", "B", "", "A", "C", "D"
+        // };
+
+        // n1 = new int[]{
+        //     2, 2, 1, 6, 5, 6, 7, 8
+        // };
+
+        // n2 = new int[]{
+        //     2, 2, 4, 6, 3, 6, 7, 8
+        // };
 
         if(args.length != 1){
             System.err.println("Usage: java RECompile <\"regularExpression\"> | java RESearch <file>");
