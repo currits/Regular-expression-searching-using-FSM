@@ -1,3 +1,4 @@
 *.txt
+!README.txt
 *.class
 .vscode/launch.json
