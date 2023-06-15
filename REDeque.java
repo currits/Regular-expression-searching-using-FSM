@@ -1,3 +1,8 @@
+///Name: Ethyn Gillies
+///ID: 1503149
+///Name: Kurtis-Rae Mokaraka
+///ID: 1256115
+
 public class REDeque {
     
     Node head;
