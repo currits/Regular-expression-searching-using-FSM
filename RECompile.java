@@ -43,15 +43,51 @@ public class RECompile {
         next1 = new ArrayList<>();
         next2 = new ArrayList<>();
 
-        expression = p;
         index = 0;
         state = 0;
+        expression = p;
 
         // These are our operators
         // an easy way to define our literals is to create a list of the symbols with
         // significance and check that a literal is NOT one of these
         // So, a string to use !contains on
         operators = "+|.*?()\\[]";
+
+        // Santising the input expression
+        // The operators that we can safely remove doubles of without considering their context
+        String temp = "+|*?";
+        for(int i = 0; i < temp.length(); i++){
+            String s = temp.substring(i, i+1); // Get the operator
+            String ss = s + s; // Creates a double of the operator
+            while (expression.contains(ss)){
+                // Teplace every double occurence with a single occurence
+                expression = expression.replace(ss, s);
+            }
+            // The expression will now no longer contain any double occurences of any of the temp operators
+        }
+        // Now to check the () and [] brackets are balanced
+        int bracketCounter = 0;
+        for(int i = 0; i < expression.length(); i++){
+            if (expression.charAt(i) == '['){
+                i+=2; //advance past the [ and the first symbol
+                while(expression.charAt(i) != ']'){
+                    i++; //increment along until the end of the [] is reached
+                    if (i == expression.length())
+                        error(); // if the end of the string is reached without finding a ], then error
+                }
+            }
+            else if (expression.charAt(i) == ']')
+                error(); // If there is an errant close ] not associated to an open [ then error
+            else if (expression.charAt(i) == '\\')
+                i++; // This makes sure to skip escaped ( or )
+            else if (expression.charAt(i) == '(')
+                bracketCounter++; // Count the open bracket
+            else if (expression.charAt(i) == ')')
+                bracketCounter--; // Count the close bracket
+        }
+        // If there is an imbalance of () then error
+        if (bracketCounter != 0)
+            error();
 
         setState(state, "", 1, 1);
         state++;
@@ -107,8 +143,6 @@ public class RECompile {
         outputWriter.close();
     }
 
-    //////////////////// Here be dragons ////////////////////
-
     private static int expression() {
         int r = 0;
 
@@ -121,7 +155,7 @@ public class RECompile {
         if (isLiteral(expression.charAt(index)) || expression.charAt(index) == '(' || expression.charAt(index) == '['
                 || expression.charAt(index) == '\\')
             expression();
-
+        // If there is an end bracket of either kind at this index, then not a legal expression
         return r;
     }
 
@@ -240,7 +274,9 @@ public class RECompile {
         else if (expression.charAt(index) == '(') {
             index++;
             r = expression();
-            if (expression.charAt(index) == ')')
+            if (index == expression.length())
+                error();
+            else if (expression.charAt(index) == ')')
                 index++;
             else
                 error();
@@ -272,6 +308,10 @@ public class RECompile {
             // Then consume any symbol until a ']' is reached, or until index is outside of
             // string
             while (index < expression.length() && expression.charAt(index) != ']') {
+                //if there are repeats within the disjunctive list, error
+                if (disjuntiveList.contains(String.valueOf(expression.charAt(index)))){
+                    error();
+                }
                 // Append the character
                 disjuntiveList += expression.charAt(index);
                 // Consume the character
