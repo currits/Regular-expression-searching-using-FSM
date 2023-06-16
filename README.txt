@@ -15,3 +15,17 @@ RECompile considers ((a)) as legal input.
 RECompile does not however consider [[abc]] as legal input.
 RECompile considers a[[ab] as legal input, including the [ as part of the multi symbol alternation.
 RECompile does not allow repeats of a symbol to occur within the multi-symbol alternation [], thus [aba] is NOT considered legal.
+
+Phrase Structure Rules:
+E -> T		Expression can be a term
+E -> TE		Expression can be a term concatenated with another term
+T -> F		Term can be a factor
+T -> F?		Term can be a Factor occuring zero or one times
+T -> F+		Term can be a Factor occuring one or more times
+T -> F*		Term can be a Factor in occuring zero or more times
+T -> F | E	Term can be a Factor in alternation with an Expression
+F -> \S		Factor can be an escaped symbol
+F -> (T)	Factor can be a bracketed Term
+F -> α		Factor can be a literal
+F -> .		Factor can be a wildcard (matches any literal)
+F -> [D]	Factor can be a disjunctive list of literals
